@@ -1,0 +1,12 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+
+PROJECT(jp)
+
+SET(CMAKE_CXX_STANDARD 11)
+
+ADD_EXECUTABLE(jp main.cpp)
+
+ADD_CUSTOM_TARGET(copy ALL
+    COMMAND sudo cp ./jp /usr/local/bin
+    DEPENDS jp
+)
