@@ -1,4 +1,7 @@
 #include "h2unit.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 bool compare(h2_string& e_value, h2_string& a_value, h2_string selector)
 {
@@ -30,39 +33,53 @@ void print(h2_string e_value, h2_string a_value, unsigned cww)
    }
 }
 
-void usage()
+std::string slurp(std::ifstream& in) 
 {
-   printf("\033[32mjp\033[0m v1.0 \033[34;4mhttps://github.com/lingjf/jp\033[0m \n\n");
-   printf("Usage: \033[32mjp\033[0m 1.json 2.json");
-   printf(" -\033[36mc\033[0m\033[90maseless\033[0m");
-   printf(" -\033[36mf\033[0m\033[90mold json\033[0m");
-   printf(" -\033[36mp\033[0m\033[90maste copy\033[0m");
-   printf(" -\033[36ms\033[0m\033[90melector .a[1]\033[0m \n\n");
-   exit(0);
+   std::ostringstream sstr;
+   sstr << in.rdbuf();
+   return sstr.str();
 }
 
-static char a1[1024 * 1024 * 8];
-static char a2[1024 * 1024 * 8];
+void usage()
+{
+   printf("\033[32mjp\033[0m v1.1 \033[34;4mhttps://github.com/lingjf/jp\033[0m \n\n");
+   printf("Usage: \033[32mjp\033[0m 1.json 2.json");
+   printf(" -\033[36mc\033[0m\033[90mase insensitive\033[0m");
+   printf(" -\033[36mf\033[0m\033[90mold json\033[0m");
+   printf(" -\033[36mp\033[0m\033[90mrogramming json\033[0m");
+   printf(" -\033[36ms\033[0m\033[90melect '.a[1]'\033[0m \n\n");
+   exit(0);
+}
 
 int main(int argc, char** argv)
 {
    const char* selector = "";
-
-   for (int i = 1, j = 0; i < argc; i++) {
-      if (strcmp("-h", argv[i]) == 0) {
-         usage();
-      } else if (strcmp("-c", argv[i]) == 0) {
-         h2_option::I().caseless = true;
-      } else if (strcmp("-f", argv[i]) == 0) {
-         h2_option::I().fold_json = true;
-      } else if (strcmp("-y", argv[i]) == 0) {
-         h2_option::I().copy_paste_json = true;
-      } else if (strcmp("-s", argv[i]) == 0) {
-         if (i < argc - 1) selector = argv[++i];
+   int n = 0;
+   for (int i = 1; i < argc; i++) {
+      if ('-' == argv[i][0]) {
+         for (const char* j = &argv[i][1]; *j; j++) {
+            if ('h' == *j || '?' == *j) {
+               usage();
+            } else if ('c' == *j) {
+               h2_option::I().caseless = true;
+            } else if ('f' == *j) {
+               h2_option::I().fold_json = !h2_option::I().fold_json;
+            } else if ('p' == *j || 'y' == *j) {
+               h2_option::I().copy_paste_json = true;
+            } else if ('s' == *j) {
+               if (i < argc - 1) selector = argv[++i];
+            } else if ('-' == *j) {
+               
+            } else {
+               printf("ignored invalid option: -%c \n", *j);
+            }
+         }
       } else {
-         strcpy(h2_option::I().path[j++], argv[i]);
+         strcpy(h2_option::I().path[n++], argv[i]);
       }
    }
+
+   if (n != 2) usage();
 
    unsigned cww = 120;
 #if defined _WIN32
@@ -75,25 +92,22 @@ int main(int argc, char** argv)
 #if defined _MSC_VER
    SetConsoleOutputCP(65001);  // set console code page to utf-8
 #endif
-   FILE* f1 = fopen(h2_option::I().path[0], "r");
-   FILE* f2 = fopen(h2_option::I().path[1], "r");
-   if (!f1 || !f2) {
-      if (!f1) printf("Couldn't open %s\n", h2_option::I().path[0]);
-      if (!f2) printf("Couldn't open %s\n", h2_option::I().path[1]);
-      exit(-1);
-   }
-   size_t r1 = fread(a1, 1, sizeof(a1), f1);
-   size_t r2 = fread(a2, 1, sizeof(a2), f2);
-   a1[r1] = '\0';
-   a2[r2] = '\0';
-   fclose(f1);
-   fclose(f2);
 
-   h2_string e = a1, a = a2;
+   std::ifstream s0(h2_option::I().path[0]);
+   std::ifstream s1(h2_option::I().path[1]);
+   if (!s0.is_open() || !s1.is_open()) {
+      if (!s0.is_open()) std::cerr << "Couldn't open " << h2_option::I().path[0] << std::endl;
+      if (!s1.is_open()) std::cerr << "Couldn't open " << h2_option::I().path[1] << std::endl;
+      return -1;
+   }
+   auto j0 = slurp(s0);
+   auto j1 = slurp(s1);
+
+   h2_string e = j0, a = j1;
    if (compare(e, a, selector)) {
       printf("same.\n");
       return 0;
-   } 
+   }
    print(e, a, cww);
 
    return 1;

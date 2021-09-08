@@ -452,9 +452,9 @@ h2_inline h2_string h2_string::center(int width) const
 {
    int left = (width - size()) / 2, right = width - left - size();
    h2_string s;
-   s.append(left, ' ');
+   if (left > 0) s.append(left, ' ');
    s.append(*this);
-   s.append(right, ' ');
+   if (right > 0) s.append(right, ' ');
    return s;
 }
 // source/utils/h2_row.cpp
@@ -1794,7 +1794,7 @@ struct h2_json_tree : h2_json_node {
       h2_json_node* node = this;
       for (auto& c : select.values)
          node = c.key.size() ? node->get(c.key, caseless) : node->get(c.index);
-      node->key_string = "";
+      if (node) node->key_string = "";
       return node;
    }
 

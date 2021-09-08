@@ -1,12 +1,13 @@
 # jp
-json compare tool
+a json compare tool, extract from h2unit
 
 ## install
 
 ```Shell
-    git clone https://github.com/jp
+    git clone https://github.com/lingjf/jp.git
     cmake .
     make
+    make install
 ```
 
 jp will be installed to */usr/local/bin*
@@ -17,7 +18,7 @@ jp 1.json 2.json [options]
 
 ## options
 
-* `-c` case-insensitive comparison
-* `-f` fold json simple array and object
-* `-p` print c/c++ source code json
-* `-s` select element to compare
+* `-c` case insensitive comparison.
+* `-f` fold simple json array and object, default is open, toggle fold/unfold.
+* `-p` programming c/c++ source code json.
+* `-s` select subelement to compare.
