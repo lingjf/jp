@@ -42,7 +42,7 @@ std::string slurp(std::ifstream& in)
 
 void usage()
 {
-   printf("\033[32mjp\033[0m v1.1 \033[34;4mhttps://github.com/lingjf/jp\033[0m \n\n");
+   printf("\033[32mjp\033[0m v1.2 \033[34;4mhttps://github.com/lingjf/jp\033[0m \n\n");
    printf("Usage: \033[32mjp\033[0m 1.json 2.json");
    printf(" -\033[36mc\033[0m\033[90mase insensitive\033[0m");
    printf(" -\033[36mf\033[0m\033[90mold json\033[0m");
