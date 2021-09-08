@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+
+  publish:
+    name: release for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: jp
+            asset_name: linux-jp.zip
+          - os: macos-latest
+            artifact_name: jp
+            asset_name: macos-jp.zip
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cmake . && cmake --build .
+    - name: Package
+      run: zip --junk-paths ${{ matrix.asset_name }} ${{ matrix.artifact_name }}
+    - name: Upload
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./${{ matrix.asset_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
+
+  windows:
+    name: release for windows-latest
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cmake . && cmake --build .
+    - name: Package
+      run: Compress-Archive jp.exe windows-jp.zip
+    - name: Upload
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./windows-jp.zip
+        asset_name: windows-jp.zip
+        tag: ${{ github.ref }}

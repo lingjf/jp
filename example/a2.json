@@ -1,0 +1,17 @@
+{
+  "Hello": 1234,
+  "World": [5, 6, 789],
+  "China": {
+    "beijing": "Beijing",
+    "shanghai": "shanghai",
+    "guangdong": "guangzhou",
+    "zhejiang": "hangzhou",
+    "hunan": "changsha",
+    "hubei": "wuhan",
+    "jiangxi": "nanchang",
+    "sannxi": "taiyuan",
+    "jiangsu": "nanjing",
+    "shandong": "jinan",
+    "fujian": "fuzhou"
+  }
+}
