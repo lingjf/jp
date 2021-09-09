@@ -2,7 +2,7 @@
   "Hello": 1234,
   "World": [5, 6, 789],
   "China": {
-    "beijing": "Beijing",
+    "beijing": "beijing",
     "shanghai": "shanghai",
     "guangdong": "guangzhou",
     "zhejiang": "hangzhou",

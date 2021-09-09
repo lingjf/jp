@@ -20,11 +20,7 @@
 #   include <alloca.h>
 #endif
 
-#if defined __H2UNIT_HPP__
-#   define h2_inline
-#else
-#   define h2_inline inline
-#endif
+#define h2_inline inline
 
 // source/utils/h2_list.hpp
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
@@ -214,16 +210,9 @@ struct h2_json {
 #      define NOMINMAX  // fix std::min/max conflict with windows::min/max
 #   endif
 #   include <windows.h>
-#   include <io.h> /* _write */
 #else
 #   include <sys/ioctl.h>
 #   include <unistd.h>
-#endif
-
-#if defined _WIN32
-#   define LIBC__write ::_write
-#else
-#   define LIBC__write ::write
 #endif
 
 // source/utils/h2_list.cpp
@@ -431,7 +420,6 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\t", "\t");
    s.replace_all("\\\"", "\"");
    s.replace_all("\\\\", "\\");
-   //todo: escape \u12ab
    return s;
 }
 
@@ -704,7 +692,7 @@ struct h2_shell {
          if (current[i][0] != '\0')
             sprintf(a + strlen(a), "%d;", style2value(current[i]));
       a[strlen(a) - 1] = 'm';
-      LIBC__write(1, a, strlen(a));
+      ::printf("%s", a);
    }
    void parse(const char* style)
    {
@@ -726,7 +714,7 @@ struct h2_shell {
       if (h2_color::isctrl(str)) {
          I().parse(str), I().change();
       } else {
-         LIBC__write(fileno(stdout), str, strlen(str));
+         ::printf("%s", str);
       }
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
@@ -1985,7 +1973,10 @@ struct h2_json_dual {  // combine two node into a dual
 
          e_row.push_back(strcmp(e_class, "object") ? "[" : "{");
          a_row.push_back(strcmp(a_class, "object") ? "[" : "{");
-         if (O.fold_json && e_children_rows.foldable() && a_children_rows.foldable()) {
+         if (O.fold_json && match && (!e_children_rows.foldable() && !a_children_rows.foldable())) {
+            e_row += gray(" ... ");
+            a_row += gray(" ... ");
+         } else if (O.fold_json && e_children_rows.foldable() && a_children_rows.foldable()) {
             e_row += e_children_rows.folds();
             a_row += a_children_rows.folds();
          } else {
