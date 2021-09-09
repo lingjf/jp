@@ -7,34 +7,40 @@ on:
 
 jobs:
 
-  publish:
-    name: release for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: jp
-            asset_name: linux-jp.zip
-          - os: macos-latest
-            artifact_name: jp
-            asset_name: macos-jp.zip
+  linux:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: zip --junk-paths ${{ matrix.asset_name }} ${{ matrix.artifact_name }}
+      run: tar czf linux-jp.tar.gz jp
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./${{ matrix.asset_name }}
-        asset_name: ${{ matrix.asset_name }}
+        file: ./linux-jp.tar.gz
+        asset_name: linux-jp.tar.gz
+        tag: ${{ github.ref }}
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cmake . && cmake --build . --config Release
+    - name: Package
+      run: zip --junk-paths macos-jp.zip jp
+    - name: Upload
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./macos-jp.zip
+        asset_name: macos-jp.zip
         tag: ${{ github.ref }}
 
   windows:
-    name: release for windows-latest
+    name: release for windows
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2

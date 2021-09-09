@@ -8,12 +8,7 @@ on:
 jobs:
 
   linux:
-    runs-on: ${{matrix.os}}
-    name: ${{matrix.os}}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: build
@@ -40,6 +35,42 @@ jobs:
         continue-on-error: true
       - name: test paste
         run: jp ./example/a.json ./example/b.json -p
+        continue-on-error: true
+      - name: test dir
+        run: jp ./example
+        continue-on-error: true
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          mkdir ci
+          cd ci
+          cmake ..
+          cmake --build . --config Release
+          cmake --install .
+      - name: which
+        run: which jp
+      - name: test different json
+        run: jp ./example/a.json ./example/b.json
+        continue-on-error: true
+      - name: test same json
+        run: jp ./example/a.json ./example/a1.json
+      - name: test same json with case insensitive
+        run: jp ./example/a.json ./example/a2.json -c
+      - name: test select
+        run: jp ./example/a.json ./example/a2.json -s .world
+        continue-on-error: true
+      - name: test unfold
+        run: jp ./example/a.json ./example/b.json -f
+        continue-on-error: true
+      - name: test paste
+        run: jp ./example/a.json ./example/b.json -p
+        continue-on-error: true
+      - name: test dir
+        run: jp ./example
         continue-on-error: true
 
   windows:
@@ -70,4 +101,7 @@ jobs:
         continue-on-error: true
       - name: test paste
         run: jp ./example/a.json ./example/b.json -p
+        continue-on-error: true
+      - name: test dir
+        run: jp ./example
         continue-on-error: true

@@ -20,8 +20,14 @@ install directory is in `PATH` environment
 
 ## usage
 
+Compare two json files
 ```Shell
 jp 1.json 2.json [options]
+```
+
+Scan json files in directory then compare them in pairs
+```Shell
+jp dir [options]
 ```
 
 ## options
