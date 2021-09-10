@@ -26,15 +26,12 @@ jobs:
       - name: test same json
         run: jp ./example/a.json ./example/a1.json
       - name: test same json with case insensitive
-        run: jp ./example/a.json ./example/a2.json -c
+        run: jp ./example/a.json ./example/a2.json -cf
       - name: test select
         run: jp ./example/a.json ./example/a2.json -s .world
         continue-on-error: true
       - name: test unfold
         run: jp ./example/a.json ./example/b.json -f
-        continue-on-error: true
-      - name: test paste
-        run: jp ./example/a.json ./example/b.json -p
         continue-on-error: true
       - name: test dir
         run: jp ./example
@@ -59,15 +56,12 @@ jobs:
       - name: test same json
         run: jp ./example/a.json ./example/a1.json
       - name: test same json with case insensitive
-        run: jp ./example/a.json ./example/a2.json -c
+        run: jp ./example/a.json ./example/a2.json -cf
       - name: test select
         run: jp ./example/a.json ./example/a2.json -s .world
         continue-on-error: true
       - name: test unfold
         run: jp ./example/a.json ./example/b.json -f
-        continue-on-error: true
-      - name: test paste
-        run: jp ./example/a.json ./example/b.json -p
         continue-on-error: true
       - name: test dir
         run: jp ./example
@@ -86,21 +80,20 @@ jobs:
           cmake --install .
       - name: which
         run: Get-Command jp.exe
+      - name: powershell width
+        run: echo (Get-Host).UI.RawUI.WindowSize.Width
       - name: test different json
         run: jp ./example/a.json ./example/b.json
         continue-on-error: true
       - name: test same json
         run: jp ./example/a.json ./example/a1.json
       - name: test same json with case insensitive
-        run: jp ./example/a.json ./example/a2.json -c
+        run: jp ./example/a.json ./example/a2.json -cf
       - name: test select
         run: jp ./example/a.json ./example/a2.json -s .world
         continue-on-error: true
       - name: test unfold
         run: jp ./example/a.json ./example/b.json -f
-        continue-on-error: true
-      - name: test paste
-        run: jp ./example/a.json ./example/b.json -p
         continue-on-error: true
       - name: test dir
         run: jp ./example

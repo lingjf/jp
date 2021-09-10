@@ -14,13 +14,13 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: tar czf linux-jp.tar.gz jp
+      run: tar czf jp-bin-linux.tar.gz jp
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./linux-jp.tar.gz
-        asset_name: linux-jp.tar.gz
+        file: ./jp-bin-linux.tar.gz
+        asset_name: jp-bin-linux.tar.gz
         tag: ${{ github.ref }}
 
   macos:
@@ -30,13 +30,13 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: zip --junk-paths macos-jp.zip jp
+      run: zip --junk-paths jp-bin-macos.zip jp
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./macos-jp.zip
-        asset_name: macos-jp.zip
+        file: ./jp-bin-macos.zip
+        asset_name: jp-bin-macos.zip
         tag: ${{ github.ref }}
 
   windows:
@@ -47,11 +47,11 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: Compress-Archive jp.exe windows-jp.zip
+      run: Compress-Archive jp.exe jp-bin-windows.zip
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./windows-jp.zip
-        asset_name: windows-jp.zip
+        file: ./jp-bin-windows.zip
+        asset_name: jp-bin-windows.zip
         tag: ${{ github.ref }}

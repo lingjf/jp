@@ -8,10 +8,10 @@ a json compare tool, extract from h2unit
 ## install
 
 ```Shell
-    git clone https://github.com/lingjf/jp.git
-    cmake .
-    make
-    make install
+git clone https://github.com/lingjf/jp.git
+cmake .
+make
+make install
 ```
 
 jp will be installed to `/usr/local/bin` (Linux/macOS) `C:\Windows\system32\` (Windows)
@@ -22,7 +22,7 @@ install directory is in `PATH` environment
 
 Compare two json files
 ```Shell
-jp 1.json 2.json [options]
+jp a.json b.json [options]
 ```
 
 Scan json files in directory then compare them in pairs
@@ -33,6 +33,5 @@ jp dir [options]
 ## options
 
 * `-c` case insensitive comparison.
-* `-f` fold simple json array and object, default is open, toggle fold/unfold.
-* `-p` programming c/c++ source code json.
-* `-s` select subelement to compare.
+* `-f` toggle (un)fold simple json array and object.
+* `-s` select subelement to compare, like [jq](https://github.com/stedolan/jq)
