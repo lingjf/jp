@@ -1,5 +1,4 @@
 struct h2_shell {
-   h2_singleton(h2_shell);
    char current[8][32];
 
    h2_shell()
@@ -55,7 +54,7 @@ struct h2_shell {
    {
       /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
       if (h2_color::isctrl(str)) {
-         I().parse(str), I().change();
+         parse(str), change();
       } else {
          ::printf("%s", str);
       }
@@ -95,30 +94,30 @@ struct h2_shell {
       if (!strcmp(style, "bg_white")) return 47;
       return 0;
    }
-};
+} S;
 
 h2_inline void h2_color::prints(const char* style, const char* format, ...)
 {
    if (style && strlen(style)) {
       char t[128];
       sprintf(t, "\033{%s}", style);
-      h2_shell::I().print(t);
+      S.print(t);
    }
 
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   h2_shell::I().print(alloca_str);
+   S.print(alloca_str);
 
-   if (style && strlen(style)) h2_shell::I().print("\033{reset}");
+   if (style && strlen(style)) S.print("\033{reset}");
 }
 
-h2_inline void h2_color::printl(const h2_row& row, bool cr)
+h2_inline void h2_color::printl(const h2_sentence& sentence, bool cr)
 {
-   for (auto& word : row) h2_shell::I().print(word.c_str());
-   if (cr) h2_shell::I().print("\n");
+   for (auto& word : sentence) S.print(word.c_str());
+   if (cr) S.print("\n");
 }
 
-h2_inline void h2_color::printl(const h2_rows& rows, bool cr)
+h2_inline void h2_color::printl(const h2_paragraph& paragraph, bool cr)
 {
-   for (auto& row : rows) printl(row, cr);
+   for (auto& sentence : paragraph) printl(sentence, cr);
 }

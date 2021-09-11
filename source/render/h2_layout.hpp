@@ -1,3 +1,3 @@
 struct h2_layout {
-   static h2_rows split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, bool same, unsigned width);
+   static h2_paragraph split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, bool same, unsigned width);
 };

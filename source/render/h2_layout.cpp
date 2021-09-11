@@ -1,18 +1,18 @@
-static inline h2_rows row_break(const h2_row& row, unsigned width)
+static inline h2_paragraph sentence_break(const h2_sentence& st, unsigned width)
 {
-   h2_rows rows;
+   h2_paragraph paragraph;
    h2_string current_style;
-   h2_row wrap;
+   h2_sentence wrap;
    unsigned length = 0;
 
-   for (auto& word : row) {
+   for (auto& word : st) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
       } else {
          for (auto& c : word) {
             if (width <= length) {  // terminate line as later as possible
-               rows.push_back(wrap);
+               paragraph.push_back(wrap);
                wrap.clear();
                length = 0;
                if (current_style.size()) wrap.push_back(current_style);
@@ -23,33 +23,35 @@ static inline h2_rows row_break(const h2_row& row, unsigned width)
       }
    }
    if (length < width) wrap.push_back(h2_string(width - length, ' '));
-   rows.push_back(wrap);
-   return rows;
+   paragraph.push_back(wrap);
+   return paragraph;
 }
 
-static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_rows& right_rows, unsigned left_width, unsigned right_width)
+static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, unsigned left_width, unsigned right_width)
 {
+   h2_paragraph paragraph;
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
-   for (size_t i = 0; i < std::max(left_rows.size(), right_rows.size()); ++i) {
-      auto left_wrap_rows = row_break(i < left_rows.size() ? left_rows[i] : left_empty, left_width);
-      auto right_wrap_rows = row_break(i < right_rows.size() ? right_rows[i] : right_empty, right_width);
-      for (size_t j = 0; j < std::max(left_wrap_rows.size(), right_wrap_rows.size()); ++j) {
-         h2_row row;
-         row += j < left_wrap_rows.size() ? left_wrap_rows[j].brush("reset") : color(left_empty, "reset");
-         row.printf("dark gray", j < left_wrap_rows.size() - 1 ? "\\│ " : " │ ");
-         row += j < right_wrap_rows.size() ? right_wrap_rows[j].brush("reset") : color(right_empty, "reset");
-         row.printf("dark gray", j < right_wrap_rows.size() - 1 ? "\\" : " ");
-         rows.push_back(row);
+   for (size_t i = 0; i < std::max(left_paragraph.size(), right_paragraph.size()); ++i) {
+      auto left_wrap_sts = sentence_break(i < left_paragraph.size() ? left_paragraph[i] : left_empty, left_width);
+      auto right_wrap_sts = sentence_break(i < right_paragraph.size() ? right_paragraph[i] : right_empty, right_width);
+      for (size_t j = 0; j < std::max(left_wrap_sts.size(), right_wrap_sts.size()); ++j) {
+         h2_sentence st;
+         st += j < left_wrap_sts.size() ? left_wrap_sts[j].brush("reset") : color(left_empty, "reset");
+         st.printf("dark gray", j < left_wrap_sts.size() - 1 ? "\\│ " : " │ ");
+         st += j < right_wrap_sts.size() ? right_wrap_sts[j].brush("reset") : color(right_empty, "reset");
+         st.printf("dark gray", j < right_wrap_sts.size() - 1 ? "\\" : " ");
+         paragraph.push_back(st);
       }
    }
+   return paragraph;
 }
 
-h2_inline h2_rows h2_layout::split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, bool same, unsigned width)
+h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, bool same, unsigned width)
 {
    unsigned valid_width = width - (1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
-   unsigned left_width = std::max(left_rows.width(), (unsigned)strlen(left_title)); /* at least title width */
-   unsigned right_width = std::max(right_rows.width(), (unsigned)strlen(right_title));
+   unsigned left_width = std::max(left_paragraph.width(), (unsigned)strlen(left_title)); /* at least title width */
+   unsigned right_width = std::max(right_paragraph.width(), (unsigned)strlen(right_title));
 
    if (left_width < valid_width / 2)
       right_width = std::min(valid_width - left_width, right_width);
@@ -58,10 +60,8 @@ h2_inline h2_rows h2_layout::split(const h2_rows& left_rows, const h2_rows& righ
    else
       left_width = right_width = valid_width / 2;
 
-   h2_rows rows;
-   h2_row title_row = gray(h2_string(left_title).center(left_width)) + (same ? color(" = ", "green") : "   ") + gray(h2_string(right_title).center(right_width));
-   rows.push_back(title_row);
+   h2_sentence title = gray(h2_string(left_title).center(left_width)) + (same ? color(" = ", "green") : "   ") + gray(h2_string(right_title).center(right_width));
+   h2_paragraph page = {title};
 
-   rows_merge(rows, left_rows, right_rows, left_width, right_width);
-   return rows;
+   return page += sentences_merge(left_paragraph, right_paragraph, left_width, right_width);
 }

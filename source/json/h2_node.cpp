@@ -82,46 +82,48 @@ struct h2_json_node {
       }
    }
 
-   void print(h2_rows& rows, bool fold = false, bool acronym = false, int depth = 0, int next = 0)
+   h2_paragraph print(bool fold = false, bool acronym = false, int depth = 0, int next = 0)
    {
-      h2_row row;
-      row.indent(depth * 2);
+      h2_paragraph paragraph;
+      h2_sentence sentence;
+      sentence.indent(depth * 2);
       if (key_string.size())
-         row.push_back("\"" + key_string + "\": ");
+         sentence.push_back("\"" + key_string + "\": ");
       if (is_null())
-         row.push_back("null");
+         sentence.push_back("null");
       else if (is_bool())
-         row.push_back(value_boolean ? "true" : "false");
+         sentence.push_back(value_boolean ? "true" : "false");
       else if (is_number()) {
          if (value_double - ::floor(value_double) == 0)
-            row.push_back(std::to_string((long long)value_double).c_str());
+            sentence.push_back(std::to_string((long long)value_double).c_str());
          else
-            row.push_back(std::to_string(value_double).c_str());
+            sentence.push_back(std::to_string(value_double).c_str());
       } else if (is_string())
-         row.push_back("\"" + value_string + "\"");
+         sentence.push_back("\"" + value_string + "\"");
       else if (is_array() || is_object()) {
-         h2_rows children_rows;
+         h2_paragraph children_paragraph;
          h2_list_for_each_entry_i(p, i, children, h2_json_node, x)
-           p->print(children_rows, fold, acronym, depth + 1, children.count() - i - 1);
+           children_paragraph += p->print(fold, acronym, depth + 1, children.count() - i - 1);
 
-         row.push_back(is_array() ? "[" : "{");
+         sentence.push_back(is_array() ? "[" : "{");
 
-         if (fold && children_rows.foldable()) {
-            row += children_rows.folds();
+         if (fold && children_paragraph.foldable()) {
+            sentence += children_paragraph.folds();
          } else {
             if (fold && acronym) {
-               row.push_back(" ... ");
+               sentence.push_back(" ... ");
             } else {
-               rows.push_back(row), row.clear();
-               rows += children_rows;
-               row.indent(depth * 2);
+               paragraph.push_back(sentence), sentence.clear();
+               paragraph += children_paragraph;
+               sentence.indent(depth * 2);
             }
          }
-         row.push_back(is_array() ? "]" : "}");
+         sentence.push_back(is_array() ? "]" : "}");
       }
-      if (row.size()) {
-         if (next) row.push_back(", ");
-         rows.push_back(row), row.clear();
+      if (sentence.size()) {
+         if (next) sentence.push_back(", ");
+         paragraph.push_back(sentence), sentence.clear();
       }
+      return paragraph;
    }
 };

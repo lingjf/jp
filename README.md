@@ -22,12 +22,12 @@ install directory is in `PATH` environment
 
 Compare two json files
 ```Shell
-jp a.json b.json [options]
+jp a.json b.json 
 ```
 
 Scan json files in directory then compare them in pairs
 ```Shell
-jp dir [options]
+jp dir 
 ```
 
 ## options
@@ -35,3 +35,7 @@ jp dir [options]
 * `-c` case insensitive comparison.
 * `-f` toggle (un)fold simple json array and object.
 * `-s` select subelement to compare, like [jq](https://github.com/stedolan/jq)
+
+
+
+

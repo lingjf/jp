@@ -1,3 +1,17 @@
+
+#define h2_sprintf(str, fmt)                    \
+   do {                                         \
+      va_list ap;                               \
+      va_start(ap, fmt);                        \
+      va_list bp;                               \
+      va_copy(bp, ap);                          \
+      int len = vsnprintf(nullptr, 0, fmt, bp); \
+      str = (char*)alloca(len + 1);             \
+      va_end(bp);                               \
+      len = vsnprintf(str, len + 1, fmt, ap);   \
+      va_end(ap);                               \
+   } while (0)
+
 struct h2_string : public std::basic_string<char, std::char_traits<char>> {
    h2_string() : basic_string() {}
    h2_string(const h2_string& str) : basic_string(str.c_str()) {}

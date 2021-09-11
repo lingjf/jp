@@ -15,7 +15,7 @@
 void usage()
 {
    printf("\n");
-   printf("\033[34;4mhttps://github.com/lingjf/jp\033[0m v1.2 \n\n");
+   printf("\033[90;4mhttps://github.com/lingjf/\033[0m\033[32;4mjp\033[0m \033[90mv\033[0m1.2 \n\n");
    printf("\033[90mUsage:\033[0m \033[32mjp\033[0m a.json b.json");
    printf(" -\033[36mc\033[0m\033[90mase insensitive\033[0m");
    printf(" -\033[36mf\033[0m\033[90mold json\033[0m");
@@ -137,10 +137,10 @@ bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq)
 
    if (same && O.fold_json) j0 = "", j1 = "";
 
-   h2_rows r0, r1;
+   h2_paragraph r0, r1;
    h2_json::diff(j0, j1, r0, r1, O.caseless);
-   h2_rows page = h2_layout::split(r0, r1, f0.c_str(), f1.c_str(), same, width() - 1);
-   for (auto& row : page) row.indent(1);
+   h2_paragraph page = h2_layout::split(r0, r1, f0.c_str(), f1.c_str(), same, width() - 1);
+   for (auto& st : page) st.indent(1);
 
    if (seq) {
       h2_string t(page.width(), '-');
@@ -167,9 +167,9 @@ int main(int argc, char** argv)
             if ('h' == *j || '?' == *j) {
                usage();
             } else if ('c' == *j) {
-               h2_option::I().caseless = true;
+               O.caseless = true;
             } else if ('f' == *j) {
-               h2_option::I().fold_json = !h2_option::I().fold_json;
+               O.fold_json = !O.fold_json;
             } else if ('s' == *j) {
                if (i < argc - 1) selector = argv[++i];
             } else if ('-' == *j) {

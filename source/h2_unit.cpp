@@ -3,22 +3,23 @@
 #include <cassert>
 #include <cctype>
 #include <cstdarg>
-#include <regex>
 
 #if defined _WIN32
 #   ifndef NOMINMAX
 #      define NOMINMAX  // fix std::min/max conflict with windows::min/max
 #   endif
 #   include <windows.h>
+#define strcasecmp _stricmp
 #else
 #   include <sys/ioctl.h>
 #   include <unistd.h>
 #endif
 
 #include "utils/h2_list.cpp"
-#include "utils/h2_misc.cpp"
 #include "utils/h2_string.cpp"
-#include "utils/h2_row.cpp"
+#include "utils/h2_compare.cpp"
+#include "utils/h2_sentence.cpp"
+#include "utils/h2_paragraph.cpp"
 #include "utils/h2_color.cpp"
 
 #include "json/h2_node.cpp"

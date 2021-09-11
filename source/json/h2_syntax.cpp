@@ -72,6 +72,7 @@ struct h2_json_syntax {
       } else {
          node.value_double = parse_number(node.value_string.c_str());
          node.type = h2_json_node::t_number;
+         node.value_string = "";
       }
       return true;
    }
