@@ -8,12 +8,14 @@ struct h2_json_node {
    static constexpr int t_object = 7;
 
    int type = t_absent;
+   int index = 0;
    h2_string key_string;
    h2_string value_string;
    double value_double = 0;
    bool value_boolean = false;
    h2_list children, x; /* array or object */
 
+   h2_json_node(int index_ = 0) : index(index_) {}
    ~h2_json_node()
    {
       h2_list_for_each_entry (p, children, h2_json_node, x) {

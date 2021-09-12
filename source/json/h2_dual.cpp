@@ -7,7 +7,7 @@ struct h2_json_dual {  // combine two node into a dual
    h2_paragraph e_blob, a_blob;
    h2_list children, x;
    h2_json_dual* perent;
-   int relationship;
+   int relationship, index;
    int depth;
 
    ~h2_json_dual()
@@ -24,6 +24,7 @@ struct h2_json_dual {  // combine two node into a dual
       if (e) e->dual(e_type, e_class, e_key, e_value);
       if (a) a->dual(a_type, a_class, a_key, a_value);
       key_equal = e_key.equals(a_key, caseless);
+      index = e ? e->index : INT_MAX;
 
       if (strcmp(e_class, a_class)) {
          if (e) e_blob = e->print(O.fold_json, !(e && a) || relationship < 0, depth);
@@ -32,23 +33,13 @@ struct h2_json_dual {  // combine two node into a dual
       } else if (!strcmp("object", e_class)) {
          h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
             h2_json_node* child_a = a->get(child_e->key_string, false);
+            if (!child_a && caseless) child_a = a->get(child_e->key_string, true);
             if (child_a) move_dual(child_e, child_a, caseless, 1);
-         }
-         if (caseless) {
-            h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
-               h2_json_node* child_a = a->get(child_e->key_string, true);
-               if (child_a) move_dual(child_e, child_a, caseless, 2);
-            }
          }
          h2_list_for_each_entry (child_a, a->children, h2_json_node, x) {
             h2_json_node* child_e = e->get(child_a->key_string, false);
+            if (!child_e && caseless) child_e = e->get(child_a->key_string, true);
             if (child_e) move_dual(child_e, child_a, caseless, 1);
-         }
-         if (caseless) {
-            h2_list_for_each_entry (child_a, a->children, h2_json_node, x) {
-               h2_json_node* child_e = e->get(child_a->key_string, true);
-               if (child_e) move_dual(child_e, child_a, caseless, 2);
-            }
          }
          h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
             h2_json_node* child_a = h2_json_match::search(a->children, child_e);
@@ -61,12 +52,17 @@ struct h2_json_dual {  // combine two node into a dual
 
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
             children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this, -1))->x);
+
+         children.sort(sort_cmp);
       } else if (!strcmp("array", e_class)) {
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
             children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
       }
    }
-
+   static int sort_cmp(h2_list* a, h2_list* b)
+   {
+      return h2_list_entry(a, h2_json_dual, x)->index - h2_list_entry(b, h2_json_dual, x)->index;
+   }
    void move_dual(h2_json_node* child_e, h2_json_node* child_a, bool caseless, int rs)
    {
       children.push_back((new h2_json_dual(child_e, child_a, caseless, this, rs))->x);

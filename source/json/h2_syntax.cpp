@@ -80,8 +80,9 @@ struct h2_json_syntax {
    bool parse_array(h2_json_node& node)
    {
       if (!requires("[")) return false;
+      int n = 0;
       while (i < lexical.size() && !lexical[i].equals("]")) {
-         h2_json_node* new_node = new h2_json_node();
+         h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_value(*new_node)) return false;
          if (i < lexical.size() && lexical[i].equals(","))
@@ -98,8 +99,9 @@ struct h2_json_syntax {
    bool parse_object(h2_json_node& node)
    {
       if (!requires("{")) return false;
+      int n = 0;
       while (i < lexical.size() && !lexical[i].equals("}")) {
-         h2_json_node* new_node = new h2_json_node();
+         h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_key(*new_node)) return false;
          if (!requires(":")) return false;
