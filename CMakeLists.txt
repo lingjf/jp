@@ -10,13 +10,20 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG .)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE .)
 
 ADD_EXECUTABLE(jp main.cpp)
+ADD_EXECUTABLE(jp. main.cpp)
+
+TARGET_COMPILE_DEFINITIONS(jp. PUBLIC JPDOT)
 
 INSTALL(TARGETS jp
+        RUNTIME DESTINATION bin)
+
+INSTALL(TARGETS jp.
         RUNTIME DESTINATION bin)
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
         ADD_CUSTOM_TARGET(copy ALL
                 COMMAND cp ./jp.exe 'C:/Windows/system32/'
-                DEPENDS jp
+                COMMAND cp ./jp..exe 'C:/Windows/system32/'
+                DEPENDS jp jp.
         )
 ENDIF()

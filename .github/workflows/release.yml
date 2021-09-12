@@ -14,7 +14,7 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: tar czf jp-bin-linux.tar.gz jp
+      run: tar czf jp-bin-linux.tar.gz jp jp.
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
@@ -30,7 +30,7 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: zip --junk-paths jp-bin-macos.zip jp
+      run: zip --junk-paths jp-bin-macos.zip jp jp.
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
@@ -47,7 +47,7 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: Compress-Archive jp.exe jp-bin-windows.zip
+      run: Compress-Archive jp.exe jp..exe jp-bin-windows.zip
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:

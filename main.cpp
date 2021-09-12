@@ -161,6 +161,10 @@ int main(int argc, char** argv)
    const char* selector = "";
    std::vector<h2_string> paths;
 
+#ifdef JPDOT
+   paths.push_back(".");
+#endif
+
    for (int i = 1; i < argc; i++) {
       if ('-' == argv[i][0]) {
          for (const char* j = &argv[i][1]; *j; j++) {
