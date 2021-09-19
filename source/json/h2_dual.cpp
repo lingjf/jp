@@ -1,14 +1,16 @@
 struct h2_json_dual {  // combine two node into a dual
-   bool key_equal = false, match = false;
+   int depth, relationship, index = INT_MAX;
+   bool key_equal = false, value_match = false;
+   bool e_last = true, a_last = true;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
-   const char *e_class = "incomparable", *a_class = "incomparable";  // incomparable: array .v.s. object .v.s. (number | string | boolean | null)
    h2_string e_key, a_key;
    h2_string e_value, a_value;
-   h2_paragraph e_blob, a_blob;
    h2_list children, x;
-   h2_json_dual* perent;
-   int relationship, index;
-   int depth;
+
+   static int index_cmp(h2_list* a, h2_list* b)
+   {
+      return h2_list_entry(a, h2_json_dual, x)->index - h2_list_entry(b, h2_json_dual, x)->index;
+   }
 
    ~h2_json_dual()
    {
@@ -18,144 +20,115 @@ struct h2_json_dual {  // combine two node into a dual
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr, int relationship_ = 0) : relationship(relationship_), perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
+   void __move_dual(h2_json_node* child_e, h2_json_node* child_a, bool caseless)
    {
-      match = h2_json_match::match(e, a, caseless);
-      if (e) e->dual(e_type, e_class, e_key, e_value);
-      if (a) a->dual(a_type, a_class, a_key, a_value);
-      key_equal = e_key.equals(a_key, caseless);
-      index = e ? e->index : INT_MAX;
-
-      if (strcmp(e_class, a_class)) {
-         if (e) e_blob = e->print(O.fold_json, !(e && a) || relationship < 0, depth);
-         if (a) a_blob = a->print(O.fold_json, !(e && a) || relationship < 0, depth);
-         e_class = a_class = "incomparable";
-      } else if (!strcmp("object", e_class)) {
-         h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
-            h2_json_node* child_a = a->get(child_e->key_string, false);
-            if (!child_a && caseless) child_a = a->get(child_e->key_string, true);
-            if (child_a) move_dual(child_e, child_a, caseless, 1);
-         }
-         h2_list_for_each_entry (child_a, a->children, h2_json_node, x) {
-            h2_json_node* child_e = e->get(child_a->key_string, false);
-            if (!child_e && caseless) child_e = e->get(child_a->key_string, true);
-            if (child_e) move_dual(child_e, child_a, caseless, 1);
-         }
-         h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
-            h2_json_node* child_a = h2_json_match::search(a->children, child_e);
-            if (child_a) move_dual(child_e, child_a, caseless, 3);
-         }
-         h2_list_for_each_entry (child_a, a->children, h2_json_node, x) {
-            h2_json_node* child_e = h2_json_match::search(e->children, child_a);
-            if (child_e) move_dual(child_e, child_a, caseless, 3);
-         }
-
-         for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this, -1))->x);
-
-         children.sort(sort_cmp);
-      } else if (!strcmp("array", e_class)) {
-         for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
-      }
-   }
-   static int sort_cmp(h2_list* a, h2_list* b)
-   {
-      return h2_list_entry(a, h2_json_dual, x)->index - h2_list_entry(b, h2_json_dual, x)->index;
-   }
-   void move_dual(h2_json_node* child_e, h2_json_node* child_a, bool caseless, int rs)
-   {
-      children.push_back((new h2_json_dual(child_e, child_a, caseless, this, rs))->x);
+      children.push_back((new h2_json_dual(child_e, child_a, caseless, depth + 1))->x);
       child_e->x.out();
       delete child_e;
       child_a->x.out();
       delete child_a;
    }
 
-   bool has_next(h2_list* subling, bool expect) const
+   void __mark_last()
    {
-      if (subling) {
-         for (h2_list* p = x.next; p != subling; p = p->next) {
-            h2_json_dual* d = h2_list_entry(p, h2_json_dual, x);
-            if ((expect ? d->e_type : d->a_type) != h2_json_node::t_absent)
-               return true;
-         }
+      int e_count = 0, a_count = 0;
+      for (h2_list* p = children.prev; p != &children; p = p->prev) {
+         h2_json_dual* d = h2_list_entry(p, h2_json_dual, x);
+         if (d->e_type != h2_json_node::t_absent) d->e_last = e_count++ == 0;
+         if (d->a_type != h2_json_node::t_absent) d->a_last = a_count++ == 0;
       }
-      return false;
    }
 
-   void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, h2_list* subling = nullptr)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, int depth_ = 0, int relationship_ = 0) : depth(depth_), relationship(relationship_)
    {
-      if (!strcmp(e_class, "incomparable")) {
-         e_blob.samesizify(a_blob);
-         for (auto& st : e_blob) st.brush("cyan");
-         for (auto& st : a_blob) st.brush("yellow");
+      if (e) index = e->index;
+      if (e) e->format(e_type, e_key, e_value, 2);
+      if (a) a->format(a_type, a_key, a_value, 2);
+      key_equal = e_key.equals(a_key, caseless);
+      value_match = h2_json_match::match(e, a, caseless);
 
-         e_paragraph += e_blob;
-         a_paragraph += a_blob;
-         return;
+      if (e_type == h2_json_node::t_object || a_type == h2_json_node::t_object) {
+         if (e && a) {
+            h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
+               h2_json_node* child_a = a->get(child_e->key_string, false);
+               if (!child_a && caseless) child_a = a->get(child_e->key_string, true);
+               if (child_a) __move_dual(child_e, child_a, caseless);
+            }
+            h2_list_for_each_entry (child_a, a->children, h2_json_node, x) {
+               h2_json_node* child_e = e->get(child_a->key_string, false);
+               if (!child_e && caseless) child_e = e->get(child_a->key_string, true);
+               if (child_e) __move_dual(child_e, child_a, caseless);
+            }
+            h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
+               h2_json_node* child_a = h2_json_match::search(a->children, child_e, caseless);
+               if (child_a) __move_dual(child_e, child_a, caseless);
+            }
+         }
+         for (int i = 0; i < std::max(e ? e->size() : 0, a ? a->size() : 0); ++i) {
+            children.push_back((new h2_json_dual(e ? e->get(i) : nullptr, a ? a->get(i) : nullptr, caseless, depth + 1, -1))->x);
+         }
+         children.sort(index_cmp);
+      } else if (e_type == h2_json_node::t_array || a_type == h2_json_node::t_array) {
+         for (int i = 0; i < std::max(e ? e->size() : 0, a ? a->size() : 0); ++i)
+            children.push_back((new h2_json_dual(e ? e->get(i) : nullptr, a ? a->get(i) : nullptr, caseless, depth + 1))->x);
       }
+      __mark_last();
+   }
 
+   const char* __e_style() { return a_type == h2_json_node::t_absent || relationship < 0 ? "light blue" : "green"; }
+   const char* __a_style() { return e_type == h2_json_node::t_absent || relationship < 0 ? "light purple" : "red,bold"; }
+
+   void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph)
+   {
+      h2_paragraph e_ph, a_ph;
       h2_sentence e_sentence, a_sentence;
       e_sentence.indent(depth * 2);
       a_sentence.indent(depth * 2);
 
-      if (e_key.size()) {
-         if (!key_equal) e_sentence.push_back("\033{green}");
-         e_sentence.push_back(e_key);
-         if (!key_equal) e_sentence.push_back("\033{reset}");
-         e_sentence.push_back(": ");
-      }
+      if (e_type != h2_json_node::t_absent && e_key.size())
+         e_sentence += color(e_key, key_equal ? "" : __e_style()) + ": ";
+      if (a_type != h2_json_node::t_absent && a_key.size())
+         a_sentence += color(a_key, key_equal ? "" : __a_style()) + ": ";
 
-      if (a_key.size()) {
-         if (!key_equal) a_sentence.push_back("\033{red,bold}");
-         a_sentence.push_back(a_key);
-         if (!key_equal) a_sentence.push_back("\033{reset}");
-         a_sentence.push_back(": ");
-      }
+      if (e_type != h2_json_node::t_absent && e_value.size())
+         e_sentence += color(e_value, value_match ? "" : __e_style());
+      if (a_type != h2_json_node::t_absent && a_value.size())
+         a_sentence += color(a_value, value_match ? "" : __a_style());
 
-      if (!strcmp(e_class, "atomic")) {
-         if (e_value.size()) {
-            if (!match) e_sentence.push_back("\033{green}");
-            e_sentence.push_back(e_value);
-            if (!match) e_sentence.push_back("\033{reset}");
-         }
-         if (a_value.size()) {
-            if (!match) a_sentence.push_back("\033{red,bold}");
-            a_sentence.push_back(a_value);
-            if (!match) a_sentence.push_back("\033{reset}");
-         }
-      } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
-         h2_paragraph e_children_paragraph, a_children_paragraph;
-         h2_list_for_each_entry (p, children, h2_json_dual, x)
-            p->align(e_children_paragraph, a_children_paragraph, &children);
+      if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) e_sentence.push_back(e_type == h2_json_node::t_object ? "{" : "[");
+      if (a_type == h2_json_node::t_object || a_type == h2_json_node::t_array) a_sentence.push_back(a_type == h2_json_node::t_object ? "{" : "[");
 
-         e_sentence.push_back(strcmp(e_class, "object") ? "[" : "{");
-         a_sentence.push_back(strcmp(a_class, "object") ? "[" : "{");
-         if (O.fold_json && (match || relationship < 0) && (!e_children_paragraph.foldable() || !a_children_paragraph.foldable())) {
-            e_sentence += gray(" ... ");
-            a_sentence += gray(" ... ");
-         } else if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
-            e_sentence += e_children_paragraph.folds();
-            a_sentence += a_children_paragraph.folds();
-         } else {
-            e_paragraph.push_back(e_sentence), e_sentence.clear();
-            e_paragraph += e_children_paragraph;
+      h2_paragraph e_children_paragraph, a_children_paragraph;
+      h2_list_for_each_entry (p, children, h2_json_dual, x)
+         p->align(e_children_paragraph, a_children_paragraph);
+
+      if ((O.fold_json >= 2 && key_equal && value_match) || (O.fold_json >= 3 && relationship < 0)) {
+         e_sentence += e_children_paragraph.foldable() ? e_children_paragraph.folds() : gray(" ... ");
+         a_sentence += a_children_paragraph.foldable() ? a_children_paragraph.folds() : gray(" ... ");
+      } else if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
+         e_sentence += e_children_paragraph.folds();
+         a_sentence += a_children_paragraph.folds();
+      } else {
+         if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) {
+            e_ph.push_back(e_sentence), e_sentence.clear();
+            e_ph += e_children_paragraph;
             e_sentence.indent(depth * 2);
-            a_paragraph.push_back(a_sentence), a_sentence.clear();
-            a_paragraph += a_children_paragraph;
+         }
+         if (a_type == h2_json_node::t_object || a_type == h2_json_node::t_array) {
+            a_ph.push_back(a_sentence), a_sentence.clear();
+            a_ph += a_children_paragraph;
             a_sentence.indent(depth * 2);
          }
-         e_sentence.push_back(strcmp(e_class, "object") ? "]" : "}");
-         a_sentence.push_back(strcmp(a_class, "object") ? "]" : "}");
       }
-      if (e_sentence.size()) {
-         if (has_next(subling, true)) e_sentence.push_back(", ");
-         e_paragraph.push_back(e_sentence), e_sentence.clear();
-      }
-      if (a_sentence.size()) {
-         if (has_next(subling, false)) a_sentence.push_back(", ");
-         a_paragraph.push_back(a_sentence), a_sentence.clear();
-      }
+      if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) e_sentence.push_back(e_type == h2_json_node::t_object ? "}" : "]");
+      if (a_type == h2_json_node::t_object || a_type == h2_json_node::t_array) a_sentence.push_back(a_type == h2_json_node::t_object ? "}" : "]");
+
+      if (e_type != h2_json_node::t_absent && !e_last) e_sentence.push_back(", ");
+      if (a_type != h2_json_node::t_absent && !a_last) a_sentence.push_back(", ");
+      e_ph.push_back(e_sentence);
+      a_ph.push_back(a_sentence);
+      h2_paragraph::samesizify(e_ph, a_ph);
+      e_paragraph += e_ph;
+      a_paragraph += a_ph;
    }
 };

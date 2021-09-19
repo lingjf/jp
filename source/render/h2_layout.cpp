@@ -63,5 +63,8 @@ h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, cons
    h2_sentence title = gray(h2_string(left_title).center(left_width)) + (same ? color(" = ", "green") : "   ") + gray(h2_string(right_title).center(right_width));
    h2_paragraph page = {title};
 
-   return page += sentences_merge(left_paragraph, right_paragraph, left_width, right_width);
+   if (left_paragraph.width() || right_paragraph.width())
+      page += sentences_merge(left_paragraph, right_paragraph, left_width, right_width);
+
+   return page;
 }

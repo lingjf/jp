@@ -28,6 +28,7 @@ jp a.json b.json
 Scan json files in directory then compare them in pairs
 ```Shell
 jp dir 
+jp cfg*.json
 ```
 
 ## options
@@ -36,6 +37,6 @@ jp dir
 * `-f` toggle (un)fold simple json array and object.
 * `-s` select subelement to compare, like [jq](https://github.com/stedolan/jq)
 
+## exit status
 
-
-
+0, if all comparison pairs are same, otherwise -1

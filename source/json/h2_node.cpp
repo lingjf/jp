@@ -51,76 +51,57 @@ struct h2_json_node {
    bool is_array() { return t_array == type; }
    bool is_object() { return t_object == type; }
 
-   void dual(int& _type, const char*& _class, h2_string& _key, h2_string& _value)
+   h2_string quote_if(int quote)
    {
-      if (key_string.size()) _key = "\"" + key_string + "\"";
-      _type = type;
-      switch (type) {
-      case t_null:
-         _class = "atomic";
-         _value = "null";
-         break;
-      case t_boolean:
-         _class = "atomic";
-         _value = value_boolean ? "true" : "false";
-         break;
-      case t_number:
-         _class = "atomic";
-         if (value_double - ::floor(value_double) == 0)
-            _value = std::to_string((long long)value_double).c_str();
-         else
-            _value = std::to_string(value_double).c_str();
-         break;
-      case t_string:
-         _class = "atomic";
-         _value = "\"" + value_string + "\"";
-         break;
-      case t_array:
-         _class = "array";
-         break;
-      case t_object:
-         _class = "object";
-         break;
+      switch (quote) {
+      case 1: return "'";
+      case 2: return "\"";
+      case 3: return "\\\"";
+      default: return "";
       }
    }
 
-   h2_paragraph print(bool fold = false, bool acronym = false, int depth = 0, int next = 0)
+   h2_string format_value(int quote)
+   {
+      switch (type) {
+      case t_null: return "null";
+      case t_boolean: return value_boolean ? "true" : "false";
+      case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
+      case t_string: return quote_if(quote) + value_string + quote_if(quote);
+      case t_array:
+      case t_object:
+      default: return "";
+      }
+   }
+   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0)
+   {
+      _type = type;
+      if (key_string.size()) _key = quote_if(quote) + key_string + quote_if(quote);
+      _value = format_value(quote);
+   }
+
+   h2_paragraph format(bool fold, int quote = 0, int depth = 0, int next = 0)
    {
       h2_paragraph paragraph;
       h2_sentence sentence;
       sentence.indent(depth * 2);
       if (key_string.size())
-         sentence.push_back("\"" + key_string + "\": ");
-      if (is_null())
-         sentence.push_back("null");
-      else if (is_bool())
-         sentence.push_back(value_boolean ? "true" : "false");
-      else if (is_number()) {
-         if (value_double - ::floor(value_double) == 0)
-            sentence.push_back(std::to_string((long long)value_double).c_str());
-         else
-            sentence.push_back(std::to_string(value_double).c_str());
-      } else if (is_string())
-         sentence.push_back("\"" + value_string + "\"");
-      else if (is_array() || is_object()) {
+         sentence.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
+      if (is_array() || is_object()) {
          h2_paragraph children_paragraph;
-         h2_list_for_each_entry_i(p, i, children, h2_json_node, x)
-           children_paragraph += p->print(fold, acronym, depth + 1, children.count() - i - 1);
-
+         h2_list_for_each_entry_i (p, i, children, h2_json_node, x)
+            children_paragraph += p->format(fold, quote, depth + 1, children.count() - i - 1);
          sentence.push_back(is_array() ? "[" : "{");
-
          if (fold && children_paragraph.foldable()) {
             sentence += children_paragraph.folds();
          } else {
-            if (fold && acronym) {
-               sentence.push_back(" ... ");
-            } else {
-               paragraph.push_back(sentence), sentence.clear();
-               paragraph += children_paragraph;
-               sentence.indent(depth * 2);
-            }
+            paragraph.push_back(sentence), sentence.clear();
+            paragraph += children_paragraph;
+            sentence.indent(depth * 2);
          }
          sentence.push_back(is_array() ? "]" : "}");
+      } else {
+         sentence.push_back(format_value(quote));
       }
       if (sentence.size()) {
          if (next) sentence.push_back(", ");

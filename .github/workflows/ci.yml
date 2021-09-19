@@ -19,7 +19,7 @@ jobs:
           cmake --build . --config Release
           cmake --install .
       - name: which
-        run: which jp
+        run: which jp && jp -h
       - name: test different json
         run: jp ./example/a.json ./example/b.json
         continue-on-error: true
@@ -35,6 +35,9 @@ jobs:
         continue-on-error: true
       - name: test dir
         run: jp ./example
+        continue-on-error: true
+      - name: test jp e*/a*
+        run: jp e*/a*
         continue-on-error: true
       - name: test jp.
         run: jp.
@@ -52,7 +55,7 @@ jobs:
           cmake --build . --config Release
           cmake --install .
       - name: which
-        run: which jp
+        run: which jp && jp -h
       - name: test different json
         run: jp ./example/a.json ./example/b.json
         continue-on-error: true
@@ -68,6 +71,9 @@ jobs:
         continue-on-error: true
       - name: test dir
         run: jp ./example
+        continue-on-error: true
+      - name: test jp e*/a*
+        run: jp e*/a*
         continue-on-error: true
       - name: test jp.
         run: jp.
@@ -85,7 +91,7 @@ jobs:
           cmake --build . --config Release
           cmake --install .
       - name: which
-        run: Get-Command jp.exe
+        run: Get-Command jp.exe && jp -h
       - name: powershell width
         run: echo (Get-Host).UI.RawUI.WindowSize.Width
       - name: test different json
@@ -103,6 +109,9 @@ jobs:
         continue-on-error: true
       - name: test dir
         run: jp ./example
+        continue-on-error: true
+      - name: test jp *.json
+        run: cd example && jp a*
         continue-on-error: true
       - name: test jp.
         run: jp.

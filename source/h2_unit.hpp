@@ -21,7 +21,7 @@
 struct h2_option
 {
   bool caseless = false;
-  bool fold_json = true;
+  int fold_json = 9;
 } O;
 
 #include "utils/h2_list.hpp"

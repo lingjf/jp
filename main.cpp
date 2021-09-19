@@ -10,17 +10,26 @@
 #   define SEP '/'
 #   include <sys/stat.h>
 #   include <dirent.h>
+#   include <fnmatch.h>
+#endif
+
+#ifndef BINFO_GIT_COMMIT
+#   define BINFO_GIT_COMMIT ""
+#endif
+#ifndef BINFO_DATE_TIME
+#   define BINFO_DATE_TIME __TIME__ " " __DATE__
 #endif
 
 void usage()
 {
    printf("\n");
-   printf("\033[90;4mhttps://github.com/lingjf/\033[0m\033[32mjp\033[0m \033[90mv\033[0m1.2 \n\n");
+   printf("\033[90mhttps://github.com/lingjf/\033[0m\033[32mjp\033[0m \033[90mv\033[0m1.2 \033[90m%s%s\033[0m \n\n", BINFO_GIT_COMMIT, BINFO_DATE_TIME);
    printf("\033[90mUsage:\033[0m \033[32mjp\033[0m a.json b.json");
    printf(" -\033[36mc\033[0m\033[90mase insensitive\033[0m");
    printf(" -\033[36mf\033[0m\033[90mold json\033[0m");
    printf(" -\033[36ms\033[0m\033[90melect '.c[1].name'\033[0m \n\n");
    printf("\033[90mUsage:\033[0m \033[32mjp\033[0m dir \033[90m scan json files in directory(s) then compare them in pairs \033[0m \n\n");
+   printf("\033[90mUsage:\033[0m \033[32mjp\033[0m *.json \033[90m scan json files match wildcard then compare them in pairs \033[0m \n\n");
 
    exit(0);
 }
@@ -57,6 +66,34 @@ h2_string read(h2_string& fn)
    return sstr.str();
 }
 
+bool wildcard(const char* pattern, const char* subject, bool caseless)
+{
+#if defined _WIN32 || defined __CYGWIN__
+   const char *scur = subject, *pcur = pattern;
+   const char *sstar = nullptr, *pstar = nullptr;
+   while (*scur) {
+      if (*pcur == '?') {
+         ++scur;
+         ++pcur;
+      } else if (*pcur == '*') {
+         pstar = pcur++;
+         sstar = scur;
+      } else if (caseless ? ::tolower(*scur) == ::tolower(*pcur) : *scur == *pcur) {
+         ++scur;
+         ++pcur;
+      } else if (pstar) {
+         pcur = pstar + 1;
+         scur = ++sstar;
+      } else
+         return false;
+   }
+   while (*pcur == '*') ++pcur;
+   return !*pcur;
+#else
+   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);
+#endif
+}
+
 h2_string join(h2_string p1, h2_string p2)
 {
    if (p1[p1.size() - 1] == SEP) {
@@ -64,6 +101,21 @@ h2_string join(h2_string p1, h2_string p2)
    } else {
       return p1 + SEP + p2;
    }
+}
+
+h2_string fill(h2_string str)
+{
+   if (!(str.startswith("/") || str.startswith("\\") || str.startswith(".") || str.startswith("..")))
+      str = "./" + str;
+   return str;
+}
+
+h2_string first(h2_string str)
+{
+   for (char* p = (char*)str.c_str(); *p; p++) {
+      if (*p == '/' || *p == '\\') *p = '\0';
+   }
+   return str.c_str();
 }
 
 bool is_dir(const char* name)
@@ -79,8 +131,21 @@ bool is_dir(const char* name)
 #endif
 }
 
+bool is_file(const char* name)
+{
+#ifdef _MSC_VER
+   DWORD dwAttr = GetFileAttributes(name);
+   if (INVALID_FILE_ATTRIBUTES == dwAttr) return false;
+   return dwAttr & FILE_ATTRIBUTE_NORMAL;
+#else
+   struct stat s;
+   lstat(name, &s);
+   return S_ISREG(s.st_mode);
+#endif
+}
+
 static int scan_count = 0;
-void scan_dir(h2_string& path, std::vector<h2_string>& files)
+void scan_dir(h2_string& path, std::vector<h2_string>& files, const char* pattern = nullptr)
 {
 #ifdef _MSC_VER
    HANDLE h;
@@ -95,9 +160,15 @@ void scan_dir(h2_string& path, std::vector<h2_string>& files)
       h2_string fn = fd.cFileName;
       h2_string p = join(path, fn);
       if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-         scan_dir(p, files);
+         scan_dir(p, files, pattern);
       } else {
-         if (fn.endswith(".json", true)) {
+         bool m = false;
+         if (pattern) {
+            m = wildcard(pattern, p.c_str(), true);
+         } else {
+            m = fn.endswith(".json", true);
+         }
+         if (m) {
             files.push_back(p);
             scan_count++;
          }
@@ -114,9 +185,15 @@ void scan_dir(h2_string& path, std::vector<h2_string>& files)
       h2_string fn = dp->d_name;
       h2_string p = join(path, fn);
       if (dp->d_type == DT_DIR) {
-         scan_dir(p, files);
+         scan_dir(p, files, pattern);
       } else {
-         if (fn.endswith(".json", true)) {
+         bool m = false;
+         if (pattern) {
+            m = wildcard(pattern, p.c_str(), true);
+         } else {
+            m = fn.endswith(".json", true);
+         }
+         if (m) {
             files.push_back(p);
             scan_count++;
          }
@@ -127,7 +204,24 @@ void scan_dir(h2_string& path, std::vector<h2_string>& files)
 #endif
 }
 
-bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq)
+std::vector<h2_string> collect(std::vector<h2_string>& targets)
+{
+   std::vector<h2_string> files;
+   for (auto it : targets) {
+      if (is_dir(it.c_str())) {
+         scan_dir(it, files, nullptr);
+      } else if (strchr(it.c_str(), '*') || strchr(it.c_str(), '?')) {
+         h2_string sf = fill(it);
+         h2_string _1st = first(sf);
+         scan_dir(_1st, files, sf.c_str());
+      } else {  // file
+         files.push_back(it);
+      }
+   }
+   return files;
+}
+
+bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq, int cnt)
 {
    h2_string j0 = read(f0), j1 = read(f1);
 
@@ -142,27 +236,28 @@ bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq)
    h2_paragraph page = h2_layout::split(r0, r1, f0.c_str(), f1.c_str(), same, width() - 1);
    for (auto& st : page) st.indent(1);
 
-   if (seq) {
+   if (seq) { // draw separate line
       h2_string t(page.width(), '-');
       printf("\033[90m%s\033[0m\n", t.c_str());
    }
-   if (same) {
-      if (O.fold_json && scan_count == 0) {
-         printf("\033[32msame\033[0m.\n");
-         return true;
-      }
-   }
+   // if (same) {
+   //    if (O.fold_json && (scan_count == 0) && cnt == 1) {
+   //       printf("\033[32msame\033[0m.\n");
+   //       return true;
+   //    }
+   // }
    h2_color::printl(page);
+   printf("\n");
    return same;
 }
 
 int main(int argc, char** argv)
 {
    const char* selector = "";
-   std::vector<h2_string> paths;
+   std::vector<h2_string> targets;
 
 #ifdef JPDOT
-   paths.push_back(".");
+   targets.push_back(".");
 #endif
 
    for (int i = 1; i < argc; i++) {
@@ -173,7 +268,7 @@ int main(int argc, char** argv)
             } else if ('c' == *j) {
                O.caseless = true;
             } else if ('f' == *j) {
-               O.fold_json = !O.fold_json;
+               O.fold_json = 0;
             } else if ('s' == *j) {
                if (i < argc - 1) selector = argv[++i];
             } else if ('-' == *j) {
@@ -182,21 +277,15 @@ int main(int argc, char** argv)
             }
          }
       } else {
-         paths.push_back(argv[i]);
+         targets.push_back(argv[i]);
       }
    }
 
-   if (paths.size() == 0) {
+   if (targets.size() == 0) {
       usage();
    }
 
-   std::vector<h2_string> files;
-
-   for (auto it : paths)
-      if (is_dir(it.c_str()))
-         scan_dir(it, files);
-      else
-         files.push_back(it);
+   std::vector<h2_string> files = collect(targets);
 
    if (files.size() < 2) files.push_back("");
    if (files.size() < 2) files.push_back("");
@@ -205,11 +294,14 @@ int main(int argc, char** argv)
    SetConsoleOutputCP(65001);  // set console code page to utf-8
 #endif
 
-   int ret = 0, seq = 0;
+   int ret = 0, seq = 0, cnt = 0;
    for (int i = 0; i < files.size(); i++)
       for (int j = i + 1; j < files.size(); j++)
-         if (!pair(files[i], files[j], selector, seq++))
-            ret = 1;
+         cnt++;
+   for (int i = 0; i < files.size(); i++)
+      for (int j = i + 1; j < files.size(); j++)
+         if (!pair(files[i], files[j], selector, seq++, cnt))
+            ret = -1;
 
    return ret;
 }

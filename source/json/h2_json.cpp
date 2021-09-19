@@ -5,7 +5,7 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   return node->print(O.fold_json, false).string();
+   return node->format(O.fold_json, 2).string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
