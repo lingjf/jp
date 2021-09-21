@@ -27,8 +27,7 @@ struct h2_option
 #include "utils/h2_list.hpp"
 #include "utils/h2_string.hpp"
 #include "utils/h2_compare.hpp"
-#include "utils/h2_sentence.hpp"
-#include "utils/h2_paragraph.hpp"
+#include "utils/h2_line.hpp"
 #include "utils/h2_color.hpp"
 
 #include "render/h2_layout.hpp"

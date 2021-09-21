@@ -231,10 +231,10 @@ bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq, int cnt)
 
    if (same && O.fold_json) j0 = "", j1 = "";
 
-   h2_paragraph r0, r1;
-   h2_json::diff(j0, j1, r0, r1, O.caseless);
-   h2_paragraph page = h2_layout::split(r0, r1, f0.c_str(), f1.c_str(), same, width() - 1);
-   for (auto& st : page) st.indent(1);
+   h2_lines l0, l1;
+   h2_json::diff(j0, j1, l0, l1, O.caseless);
+   h2_lines page = h2_layout::split(l0, l1, f0.c_str(), f1.c_str(), same, width() - 1);
+   for (auto& line : page) line.indent(1);
 
    if (seq) { // draw separate line
       h2_string t(page.width(), '-');

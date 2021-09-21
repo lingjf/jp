@@ -80,33 +80,33 @@ struct h2_json_node {
       _value = format_value(quote);
    }
 
-   h2_paragraph format(bool fold, int quote = 0, int depth = 0, int next = 0)
+   h2_lines format(bool fold, int quote = 0, int depth = 0, int next = 0)
    {
-      h2_paragraph paragraph;
-      h2_sentence sentence;
-      sentence.indent(depth * 2);
+      h2_lines lines;
+      h2_line line;
+      line.indent(depth * 2);
       if (key_string.size())
-         sentence.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
+         line.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
       if (is_array() || is_object()) {
-         h2_paragraph children_paragraph;
+         h2_lines children_lines;
          h2_list_for_each_entry_i (p, i, children, h2_json_node, x)
-            children_paragraph += p->format(fold, quote, depth + 1, children.count() - i - 1);
-         sentence.push_back(is_array() ? "[" : "{");
-         if (fold && children_paragraph.foldable()) {
-            sentence += children_paragraph.folds();
+            children_lines += p->format(fold, quote, depth + 1, children.count() - i - 1);
+         line.push_back(is_array() ? "[" : "{");
+         if (fold && children_lines.foldable()) {
+            line += children_lines.folds();
          } else {
-            paragraph.push_back(sentence), sentence.clear();
-            paragraph += children_paragraph;
-            sentence.indent(depth * 2);
+            lines.push_back(line), line.clear();
+            lines += children_lines;
+            line.indent(depth * 2);
          }
-         sentence.push_back(is_array() ? "]" : "}");
+         line.push_back(is_array() ? "]" : "}");
       } else {
-         sentence.push_back(format_value(quote));
+         line.push_back(format_value(quote));
       }
-      if (sentence.size()) {
-         if (next) sentence.push_back(", ");
-         paragraph.push_back(sentence), sentence.clear();
+      if (line.size()) {
+         if (next) line.push_back(", ");
+         lines.push_back(line), line.clear();
       }
-      return paragraph;
+      return lines;
    }
 };

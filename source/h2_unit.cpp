@@ -18,8 +18,7 @@
 #include "utils/h2_list.cpp"
 #include "utils/h2_string.cpp"
 #include "utils/h2_compare.cpp"
-#include "utils/h2_sentence.cpp"
-#include "utils/h2_paragraph.cpp"
+#include "utils/h2_line.cpp"
 #include "utils/h2_color.cpp"
 
 #include "json/h2_node.cpp"
