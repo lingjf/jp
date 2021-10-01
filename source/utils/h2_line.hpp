@@ -40,11 +40,11 @@ struct h2_lines : std::vector<h2_line> {
    h2_lines& operator+=(const h2_lines& lines);
 
    size_t width() const;
-   bool foldable(size_t width = 20);
-   h2_line folds();
+   bool foldable(size_t width = 20) const;
+   h2_line folds() const;
 
    h2_string string() const;
 
-   void sequence(unsigned indent = 0, int start = 0);
+   void sequence(size_t indent = 0, size_t start = 0);
    static void samesizify(h2_lines& a, h2_lines& b);
 };

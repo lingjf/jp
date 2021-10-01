@@ -3,27 +3,23 @@ static inline h2_lines line_break(const h2_line& line, size_t width)
    h2_lines lines;
    h2_string current_style;
    h2_line wrap;
-   size_t length = 0;
 
    for (auto& word : line) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
-      } else {
-         for (auto& c : word) {
-            if (width <= length) {  // terminate line as later as possible
-               lines.push_back(wrap);
-               wrap.clear();
-               length = 0;
-               if (current_style.size()) wrap.push_back(current_style);
-            }
-            wrap.push_back(h2_string(1, c));
-            ++length;
+         continue;
+      }
+      for (auto& c : word.disperse()) {
+         if (width < wrap.width() + c.width()) {
+            lines.push_back(wrap.padding(width - wrap.width()));
+            wrap.clear();
+            if (current_style.size()) wrap.push_back(current_style);
          }
+         wrap.push_back(c);
       }
    }
-   if (length < width) wrap.push_back(h2_string(width - length, ' '));
-   lines.push_back(wrap);
+   lines.push_back(wrap.padding(width - wrap.width()));
    return lines;
 }
 
@@ -50,7 +46,7 @@ h2_inline h2_lines h2_layout::split(const h2_lines& left_lines, const h2_lines& 
 {
    size_t valid_width = width - (1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
-   size_t left_width = std::max(left_lines.width(), strlen(left_title)); /* at least title width */
+   size_t left_width = std::max(left_lines.width(), strlen(left_title));
    size_t right_width = std::max(right_lines.width(), strlen(right_title));
 
    if (left_width < valid_width / 2)

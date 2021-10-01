@@ -3,9 +3,7 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       if (e->size() != a->size()) return false;
-      h2_list_for_each_entry_i (p, i, e->children, h2_json_node, x)
-         if (!match(p, a->get(i), caseless))
-            return false;
+      h2_list_for_each_entry_i(p, i, e->children, h2_json_node, x) if (!match(p, a->get(i), caseless)) return false;
       return true;
    }
 
@@ -23,19 +21,19 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       switch (e->type) {
-      case h2_json_node::t_null:
-         return a->is_null();
-      case h2_json_node::t_boolean:
-         return a->is_bool() && e->value_boolean == a->value_boolean;
-      case h2_json_node::t_number:
-         return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
-      case h2_json_node::t_string:
-         return a->is_string() && e->value_string.equals(a->value_string, caseless);
-      case h2_json_node::t_array:
-         return a->is_array() && match_array(e, a, caseless);
-      case h2_json_node::t_object:
-         return a->is_object() && match_object(e, a, caseless);
-      default: return false;
+         case h2_json_node::t_null:
+            return a->is_null();
+         case h2_json_node::t_boolean:
+            return a->is_bool() && e->value_boolean == a->value_boolean;
+         case h2_json_node::t_number:
+            return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
+         case h2_json_node::t_string:
+            return a->is_string() && e->value_string.equals(a->value_string, caseless);
+         case h2_json_node::t_array:
+            return a->is_array() && match_array(e, a, caseless);
+         case h2_json_node::t_object:
+            return a->is_object() && match_object(e, a, caseless);
+         default: return false;
       }
    }
 
@@ -43,8 +41,8 @@ struct h2_json_match {
    {
       double score = 0.0, sub_score = 0.0;
       if (e->size() == a->size()) score += 0.3;
-      h2_list_for_each_entry_i (p, i, e->children, h2_json_node, x)
-         sub_score += (sub_score * i + similarity(p, a->get(i), caseless)) / (i + 1);
+      h2_list_for_each_entry_i(p, i, e->children, h2_json_node, x)
+        sub_score += (sub_score * i + similarity(p, a->get(i), caseless)) / (i + 1);
       return score + 0.7 * sub_score;
    }
 
@@ -52,8 +50,8 @@ struct h2_json_match {
    {
       double score = 0.0, sub_score = 0.0;
       if (e->size() == a->size()) score += 0.3;
-      h2_list_for_each_entry_i (p, i, e->children, h2_json_node, x)
-         sub_score += (sub_score * i + similarity(p, a->get(p->key_string, false), caseless)) / (i + 1);
+      h2_list_for_each_entry_i(p, i, e->children, h2_json_node, x)
+        sub_score += (sub_score * i + similarity(p, a->get(p->key_string, false), caseless)) / (i + 1);
       return score + 0.7 * sub_score;
    }
 

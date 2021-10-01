@@ -1,5 +1,6 @@
 struct h2_json_dual {  // Combine two node into a dual
-   int depth, relationship, index = INT_MAX;
+   size_t depth;
+   int relationship, index = INT_MAX;
    bool key_equal = false, value_match = false;
    bool e_last = true, a_last = true;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
@@ -32,14 +33,13 @@ struct h2_json_dual {  // Combine two node into a dual
    void __mark_last()
    {
       int e_count = 0, a_count = 0;
-      for (h2_list* p = children.prev; p != &children; p = p->prev) {
-         h2_json_dual* d = h2_list_entry(p, h2_json_dual, x);
-         if (d->e_type != h2_json_node::t_absent) d->e_last = e_count++ == 0;
-         if (d->a_type != h2_json_node::t_absent) d->a_last = a_count++ == 0;
+      h2_list_for_each_reverse_entry (p, children, h2_json_dual, x) {
+         if (p->e_type != h2_json_node::t_absent) p->e_last = e_count++ == 0;
+         if (p->a_type != h2_json_node::t_absent) p->a_last = a_count++ == 0;
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, int depth_ = 0, int relationship_ = 0) : depth(depth_), relationship(relationship_)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, size_t depth_ = 0, int relationship_ = 0) : depth(depth_), relationship(relationship_)
    {
       if (e) index = e->index;
       if (e) e->format(e_type, e_key, e_value, 2);
@@ -75,10 +75,10 @@ struct h2_json_dual {  // Combine two node into a dual
       __mark_last();
    }
 
-   const char* __e_style() { return a_type == h2_json_node::t_absent || relationship < 0 ? "light blue" : "green"; }
-   const char* __a_style() { return e_type == h2_json_node::t_absent || relationship < 0 ? "light purple" : "red,bold"; }
+   const char* __e_style() const { return a_type == h2_json_node::t_absent || relationship < 0 ? "light blue" : "green"; }
+   const char* __a_style() const { return e_type == h2_json_node::t_absent || relationship < 0 ? "light purple" : "red,bold"; }
 
-   void align(h2_lines& e_lines, h2_lines& a_lines)
+   void align(h2_lines& e_lines, h2_lines& a_lines) const
    {
       h2_lines e_ls, a_ls;
       h2_line e_line, a_line;

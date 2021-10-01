@@ -24,19 +24,19 @@ struct h2_json_node {
       }
    }
 
-   int size()
+   int size() const
    {
       return children.count();
    }
 
-   h2_json_node* get(int index)
+   h2_json_node* get(int index) const
    {
       if (index < 0) index = children.count() + index;
       h2_list_for_each_entry_i(p, i, children, h2_json_node, x) if (i == index) return p;
       return nullptr;
    }
 
-   h2_json_node* get(const h2_string& name, bool caseless)
+   h2_json_node* get(const h2_string& name, bool caseless) const
    {
       h2_list_for_each_entry (p, children, h2_json_node, x)
          if (p->key_string.equals(name, caseless))
@@ -44,43 +44,44 @@ struct h2_json_node {
       return nullptr;
    }
 
-   bool is_null() { return t_null == type; }
-   bool is_bool() { return t_boolean == type; }
-   bool is_number() { return t_number == type; }
-   bool is_string() { return t_string == type; }
-   bool is_array() { return t_array == type; }
-   bool is_object() { return t_object == type; }
+   bool is_null() const { return t_null == type; }
+   bool is_bool() const { return t_boolean == type; }
+   bool is_number() const { return t_number == type; }
+   bool is_string() const { return t_string == type; }
+   bool is_array() const { return t_array == type; }
+   bool is_object() const { return t_object == type; }
 
-   h2_string quote_if(int quote)
+   h2_string quote_if(int quote) const
    {
       switch (quote) {
-      case 1: return "'";
-      case 2: return "\"";
-      case 3: return "\\\"";
-      default: return "";
+         case 1: return "'";
+         case 2: return "\"";
+         case 3: return "\\\"";
+         default: return "";
       }
    }
 
-   h2_string format_value(int quote)
+   h2_string format_value(int quote) const
    {
       switch (type) {
-      case t_null: return "null";
-      case t_boolean: return value_boolean ? "true" : "false";
-      case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
-      case t_string: return quote_if(quote) + value_string + quote_if(quote);
-      case t_array:
-      case t_object:
-      default: return "";
+         case t_null: return "null";
+         case t_boolean: return value_boolean ? "true" : "false";
+         case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
+         case t_string: return quote_if(quote) + value_string + quote_if(quote);
+         case t_array:
+         case t_object:
+         default: return "";
       }
    }
-   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0)
+
+   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0) const
    {
       _type = type;
       if (key_string.size()) _key = quote_if(quote) + key_string + quote_if(quote);
       _value = format_value(quote);
    }
 
-   h2_lines format(bool fold, int quote = 0, int depth = 0, int next = 0)
+   h2_lines format(bool fold, int quote = 0, size_t depth = 0, int next = 0) const
    {
       h2_lines lines;
       h2_line line;
@@ -89,8 +90,8 @@ struct h2_json_node {
          line.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
       if (is_array() || is_object()) {
          h2_lines children_lines;
-         h2_list_for_each_entry_i (p, i, children, h2_json_node, x)
-            children_lines += p->format(fold, quote, depth + 1, children.count() - i - 1);
+         h2_list_for_each_entry_i(p, i, children, h2_json_node, x)
+           children_lines += p->format(fold, quote, depth + 1, children.count() - i - 1);
          line.push_back(is_array() ? "[" : "{");
          if (fold && children_lines.foldable()) {
             line += children_lines.folds();

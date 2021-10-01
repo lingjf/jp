@@ -1,5 +1,5 @@
 {
   "hello": 12345,
   "World": [5, 6, "789", 10],
-  "jp": ["tokyo", "osaka", "hiroshelloma", "kyoto"]
+  "jp": ["tokyo", "おおさか", "ひろしま", "kyoto"]
 }

@@ -1,3 +1,11 @@
+static inline size_t utf8len(const char* s)
+{
+   if (0xf0 == (0xf8 & *(const unsigned char*)s)) return 4;  // 4-byte utf8 code point (began with 0b11110xxx)
+   if (0xe0 == (0xf0 & *(const unsigned char*)s)) return 3;  // 3-byte utf8 code point (began with 0b1110xxxx)
+   if (0xc0 == (0xe0 & *(const unsigned char*)s)) return 2;  // 2-byte utf8 code point (began with 0b110xxxxx)
+   return 1;                                                 // 1-byte ascii (began with 0b0xxxxxxx)
+}
+
 h2_inline h2_string& h2_string::sprintf(const char* format, ...)
 {
    char* alloca_str;
@@ -14,6 +22,16 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
       start_pos += to_length;  // where 'to' is a substring of 'from'
    }
    return *this;
+}
+
+h2_inline size_t h2_string::width(size_t columns) const
+{
+   size_t w = 0, n = 0;
+   for (const char* p = c_str(); *p != '\0'; p += n) {
+      n = utf8len(p);
+      w += (n == 1 ? 1 : columns);
+   }
+   return w;
 }
 
 h2_inline bool h2_string::equals(const h2_string& str, bool caseless) const
@@ -54,15 +72,16 @@ h2_inline bool h2_string::enclosed(const char c) const
    return front() == c && back() == c;
 }
 
-h2_inline h2_string h2_string::escape() const
+h2_inline h2_string h2_string::escape(bool utf8) const
 {
    h2_string s;
    for (auto& c : *this) {
       switch (c) {
-      case '\n': s.append("\\n"); break;
-      case '\r': s.append("\\r"); break;
-      case '\t': s.append("\\t"); break;
-      default: s.push_back(c); break;
+         case '\n': s.append(utf8 ? "␍" : "\\n"); break;
+         case '\r': s.append(utf8 ? "␊" : "\\r"); break;
+         case '\t': s.append(utf8 ? "␉" : "\\t"); break;
+         case '\0': s.append(utf8 ? "␀" : "\0"); break;
+         default: s.push_back(c); break;
       }
    }
    return s;
@@ -78,6 +97,7 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\t", "\t");
    s.replace_all("\\\"", "\"");
    s.replace_all("\\\\", "\\");
+   //todo: escape \u12ab
    return s;
 }
 
@@ -94,13 +114,24 @@ h2_inline h2_string h2_string::tolower() const
    return s;
 }
 
-h2_inline h2_string h2_string::center(int width) const
+h2_inline h2_string h2_string::center(size_t width) const
 {
    if (width <= size()) return *this;
-   int left = (width - size()) / 2, right = width - left - size();
+   size_t left = (width - size()) / 2, right = width - left - size();
    h2_string s;
-   if (left > 0) s.append(left, ' ');
+   s.append(left, ' ');
    s.append(*this);
-   if (right > 0) s.append(right, ' ');
+   s.append(right, ' ');
    return s;
+}
+
+h2_inline std::vector<h2_string> h2_string::disperse() const
+{
+   std::vector<h2_string> chars;
+   for (const char* p = c_str(); *p != '\0';) {
+      auto n = utf8len(p);
+      chars.push_back(h2_string(n, p));
+      p += n;
+   }
+   return chars;
 }

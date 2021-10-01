@@ -23,7 +23,7 @@
 void usage()
 {
    printf("\n");
-   printf("\033[90mhttps://github.com/lingjf/\033[0m\033[32mjp\033[0m \033[90mv\033[0m1.2 \033[90m%s%s\033[0m \n\n", BINFO_GIT_COMMIT, BINFO_DATE_TIME);
+   printf("\033[90mhttps://github.com/lingjf/\033[0m\033[32mjp\033[0m \033[90mv\033[0m1.3 \033[90m%s%s\033[0m \n\n", BINFO_GIT_COMMIT, BINFO_DATE_TIME);
    printf("\033[90mUsage:\033[0m \033[32mjp\033[0m a.json b.json");
    printf(" -\033[36mc\033[0m\033[90mase insensitive\033[0m");
    printf(" -\033[36mf\033[0m\033[90mold json\033[0m");

@@ -23,8 +23,9 @@ jobs:
       - name: test different json
         run: jp ./example/a.json ./example/b.json
         continue-on-error: true
-      - name: test same json
+      - name: test little diff json
         run: jp ./example/a.json ./example/a1.json
+        continue-on-error: true
       - name: test same json with case insensitive
         run: jp ./example/a.json ./example/a2.json -cf
       - name: test select
@@ -59,8 +60,9 @@ jobs:
       - name: test different json
         run: jp ./example/a.json ./example/b.json
         continue-on-error: true
-      - name: test same json
+      - name: test little diff json
         run: jp ./example/a.json ./example/a1.json
+        continue-on-error: true
       - name: test same json with case insensitive
         run: jp ./example/a.json ./example/a2.json -cf
       - name: test select
@@ -97,8 +99,9 @@ jobs:
       - name: test different json
         run: jp ./example/a.json ./example/b.json
         continue-on-error: true
-      - name: test same json
+      - name: test little diff json
         run: jp ./example/a.json ./example/a1.json
+        continue-on-error: true
       - name: test same json with case insensitive
         run: jp ./example/a.json ./example/a2.json -cf
       - name: test select
