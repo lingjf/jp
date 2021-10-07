@@ -8,6 +8,7 @@ on:
 jobs:
 
   linux:
+    name: release for linux
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -24,6 +25,7 @@ jobs:
         tag: ${{ github.ref }}
 
   macos:
+    name: release for macos
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
@@ -47,7 +49,7 @@ jobs:
     - name: Build
       run: cmake . && cmake --build . --config Release
     - name: Package
-      run: Compress-Archive jp.exe jp..exe jp-bin-windows.zip
+      run: Compress-Archive -Path jp.exe,jp..exe -DestinationPath jp-bin-windows.zip
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:
