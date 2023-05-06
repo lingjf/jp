@@ -4,31 +4,32 @@
 #include <sstream>
 
 #ifdef _MSC_VER
-#   include <windows.h>
-#   define SEP '\\'
+#include <windows.h>
+#define SEP '\\'
 #else
-#   define SEP '/'
-#   include <sys/stat.h>
-#   include <dirent.h>
-#   include <fnmatch.h>
+#define SEP '/'
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fnmatch.h>
 #endif
 
 #ifndef BINFO_GIT_COMMIT
-#   define BINFO_GIT_COMMIT ""
+#define BINFO_GIT_COMMIT ""
 #endif
 #ifndef BINFO_DATE_TIME
-#   define BINFO_DATE_TIME __TIME__ " " __DATE__
+#define BINFO_DATE_TIME __TIME__ " " __DATE__
 #endif
 
 void usage()
 {
    printf("\n");
-   printf("\033[90mhttps://github.com/lingjf/\033[0m\033[32mjp\033[0m \033[90mv\033[0m1.3 \033[90m%s%s\033[0m \n\n", BINFO_GIT_COMMIT, BINFO_DATE_TIME);
+   printf("\033[90mhttps://github.com/lingjf/\033[0m\033[32mjp\033[0m \033[90mv\033[0m1.4 \033[90m%s%s\033[0m \n\n", BINFO_GIT_COMMIT, BINFO_DATE_TIME);
    printf("\033[90mUsage:\033[0m \033[32mjp\033[0m a.json b.json");
    printf(" -\033[36mc\033[0m\033[90mase insensitive\033[0m");
    printf(" -\033[36mf\033[0m\033[90mold json\033[0m");
    printf(" -\033[36ms\033[0m\033[90melect '.c[1].name'\033[0m \n\n");
-   printf("\033[90mUsage:\033[0m \033[32mjp\033[0m dir \033[90m scan json files in directory(s) then compare them in pairs \033[0m \n\n");
+   printf("\033[90mUsage:\033[0m \033[32mjp\033[0m dir1 dir2 \033[90m compare them in order \033[0m \n\n");
+   printf("\033[90mUsage:\033[0m \033[32mjp\033[0m dir \033[90m scan json files in directory then compare them in pairs \033[0m \n\n");
    printf("\033[90mUsage:\033[0m \033[32mjp\033[0m *.json \033[90m scan json files match wildcard then compare them in pairs \033[0m \n\n");
 
    exit(0);
@@ -92,6 +93,15 @@ bool wildcard(const char* pattern, const char* subject, bool caseless)
 #else
    return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);
 #endif
+}
+
+const char* basefile(const char* path)
+{
+   if (path)
+      for (const char* p = path + strlen(path); path <= p; --p)
+         if (*p == '/' || *p == '\\')
+            return p + 1;
+   return path;
 }
 
 h2_string join(h2_string p1, h2_string p2)
@@ -204,21 +214,83 @@ void scan_dir(h2_string& path, std::vector<h2_string>& files, const char* patter
 #endif
 }
 
-std::vector<h2_string> collect(std::vector<h2_string>& targets)
+void __collect(h2_string& target, std::vector<h2_string>& files)
 {
-   std::vector<h2_string> files;
-   for (auto it : targets) {
-      if (is_dir(it.c_str())) {
-         scan_dir(it, files, nullptr);
-      } else if (strchr(it.c_str(), '*') || strchr(it.c_str(), '?')) {
-         h2_string sf = fill(it);
-         h2_string _1st = first(sf);
-         scan_dir(_1st, files, sf.c_str());
-      } else {  // file
-         files.push_back(it);
-      }
+   if (is_dir(target.c_str())) {
+      scan_dir(target, files, nullptr);
+   } else if (strchr(target.c_str(), '*') || strchr(target.c_str(), '?')) {
+      h2_string sf = fill(target);
+      h2_string _1st = first(sf);
+      scan_dir(_1st, files, sf.c_str());
+   } else {  // file
+      files.push_back(target);
    }
-   return files;
+}
+
+std::vector<std::pair<h2_string, h2_string>> collect(std::vector<h2_string>& targets)
+{
+   std::vector<std::pair<h2_string, h2_string>> pairs;
+   if (targets.size() == 2) {
+      std::vector<h2_string> left, right;
+      __collect(targets[0], left);
+      __collect(targets[1], right);
+
+      std::vector<h2_string> left1, right1;
+
+      for (auto& i : left) {
+         const char* left_filename = basefile(i.c_str());
+         bool peer = false;
+         h2_string p;
+         for (auto& j : right) {
+            const char* right_filename = basefile(j.c_str());
+            if (!strcmp(left_filename, right_filename)) {
+               peer = true;
+               p = j;
+               break;
+            }
+         }
+         if (peer) {
+            pairs.push_back({i, p});
+         } else {
+            left1.push_back(i);
+         }
+      }
+
+      for (auto& j : right) {
+         const char* right_filename = basefile(j.c_str());
+         bool peer = false;
+         h2_string p;
+         for (auto& i : left) {
+            const char* left_filename = basefile(i.c_str());
+            if (!strcmp(left_filename, right_filename)) {
+               peer = true;
+               p = i;
+               break;
+            }
+         }
+         if (peer) {
+            // pairs.push_back({p, j});
+         } else {
+            right1.push_back(j);
+         }
+      }
+
+      for (int i = 0; i < std::max(left1.size(), right1.size()); ++i) {
+         pairs.push_back({i < left1.size() ? left1[i] : "", i < right1.size() ? right1[i] : ""});
+      }
+
+   } else {
+      std::vector<h2_string> files;
+      for (auto it : targets) __collect(it, files);
+
+      if (files.size() < 2) files.push_back("");
+      if (files.size() < 2) files.push_back("");
+
+      for (int i = 0; i < files.size(); i++)
+         for (int j = i + 1; j < files.size(); j++)
+            pairs.push_back({files[i], files[j]});
+   }
+   return pairs;
 }
 
 bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq, int cnt)
@@ -236,7 +308,7 @@ bool pair(h2_string& f0, h2_string& f1, h2_string selector, int seq, int cnt)
    h2_lines page = h2_layout::split(l0, l1, f0.c_str(), f1.c_str(), same, width() - 1);
    for (auto& line : page) line.indent(1);
 
-   if (seq) { // draw separate line
+   if (seq) {  // draw separate line
       h2_string t(page.width(), '-');
       printf("\033[90m%s\033[0m\n", t.c_str());
    }
@@ -285,23 +357,17 @@ int main(int argc, char** argv)
       usage();
    }
 
-   std::vector<h2_string> files = collect(targets);
-
-   if (files.size() < 2) files.push_back("");
-   if (files.size() < 2) files.push_back("");
+   std::vector<std::pair<h2_string, h2_string>> pairs = collect(targets);
 
 #if defined _MSC_VER
    SetConsoleOutputCP(65001);  // set console code page to utf-8
 #endif
 
-   int ret = 0, seq = 0, cnt = 0;
-   for (int i = 0; i < files.size(); i++)
-      for (int j = i + 1; j < files.size(); j++)
-         cnt++;
-   for (int i = 0; i < files.size(); i++)
-      for (int j = i + 1; j < files.size(); j++)
-         if (!pair(files[i], files[j], selector, seq++, cnt))
-            ret = -1;
+   int ret = 0, seq = 0, cnt = pairs.size();
+
+   for (auto& it : pairs)
+      if (!pair(it.first, it.second, selector, seq++, cnt))
+         ret = -1;
 
    return ret;
 }
